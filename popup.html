@@ -1,0 +1,450 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>D365 Entity Compare</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#f0f2f5;color:#1e1e2e;width:1120px;min-height:760px}
+body.fullpage{width:100%;min-height:100vh;max-width:1520px;margin:0 auto}
+
+/* ── Header ── */
+.hdr{background:linear-gradient(135deg,#0078d4,#005a9e);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:12px}
+.hdr-icon{font-size:22px}
+.hdr-title{font-size:17px;font-weight:700}
+.hdr-sub{font-size:11px;opacity:.75;margin-top:1px}
+.page{padding:18px 22px;display:flex;flex-direction:column;gap:16px}
+
+/* ── Card ── */
+.card{background:#fff;border:1px solid #e1e4e8;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
+.card-hdr{background:#f6f8fa;border-bottom:1px solid #e1e4e8;padding:10px 16px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:#333}
+.card-body{padding:16px 18px}
+.card-toggle{margin-left:auto;border:1px solid #d0d5dd;background:#fff;color:#475467;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;cursor:pointer}
+.card-toggle:hover{background:#f8fafc}
+.ml-auto{margin-left:auto}
+
+/* ── Step layout ── */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:14px;padding:14px 0}
+.step+.step{border-top:1px dashed #e1e4e8}
+.step-num{width:26px;height:26px;border-radius:50%;background:#0078d4;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-content{flex:1;min-width:0}
+.step-title{font-size:12.5px;font-weight:700;color:#1e1e2e;margin-bottom:2px}
+.step-desc{font-size:11px;color:#888;margin-bottom:10px;line-height:1.4}
+
+/* ── Profile form (step 1) ── */
+.pf-form{display:grid;grid-template-columns:1fr 1.6fr auto;gap:8px;align-items:end}
+.pf-form label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#666;display:block;margin-bottom:4px}
+.pf-form input{width:100%;padding:7px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12.5px;outline:none;transition:border-color .18s,box-shadow .18s}
+.pf-form input:focus{border-color:#0078d4;box-shadow:0 0 0 3px rgba(0,120,212,.12)}
+
+/* ── Profile list (step 1) ── */
+.pf-list{display:flex;flex-direction:column;gap:5px;margin-top:10px;max-height:180px;overflow-y:auto}
+.pf-empty{text-align:center;padding:14px;color:#bbb;font-size:12px;border:1px dashed #e1e4e8;border-radius:6px}
+.pf-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #e1e4e8;border-radius:7px;background:#fafafa;transition:all .15s;cursor:default}
+.pf-item:hover{background:#f0f6ff;border-color:#bfdbfe}
+.pf-item.editing{border-color:#0078d4;background:#eff6ff}
+.pf-dot{width:32px;height:32px;border-radius:8px;background:#0078d4;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;letter-spacing:-.5px}
+.pf-info{flex:1;min-width:0}
+.pf-name{font-weight:700;font-size:12.5px;color:#1e1e2e}
+.pf-url{font-size:10.5px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-acts{display:flex;gap:4px;flex-shrink:0}
+
+/* ── Env selector cards (step 2) ── */
+.env-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.env-card{border:1px solid #e1e4e8;border-radius:8px;overflow:hidden}
+.env-card-hdr{padding:8px 12px;display:flex;align-items:center;gap:7px;font-weight:700;font-size:12px}
+.env-card-hdr.src{background:#eff6ff;border-bottom:1px solid #bfdbfe;color:#1d4ed8}
+.env-card-hdr.tgt{background:#f0fdf4;border-bottom:1px solid #bbf7d0;color:#15803d}
+.env-card-body{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.env-sel{width:100%;padding:8px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12.5px;background:#fff;outline:none;cursor:pointer}
+.env-sel:focus{border-color:#0078d4;box-shadow:0 0 0 3px rgba(0,120,212,.12)}
+.env-sel.sel-src:focus{border-color:#3b82f6}
+.env-sel.sel-tgt:focus{border-color:#22c55e}
+.env-manual{display:none;flex-direction:column;gap:6px}
+.env-manual.show{display:flex}
+.env-manual input{width:100%;padding:7px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none}
+.env-manual input:focus{border-color:#0078d4;box-shadow:0 0 0 3px rgba(0,120,212,.12)}
+.env-manual-toggle{font-size:11px;color:#0078d4;cursor:pointer;background:none;border:none;padding:0;text-align:left;text-decoration:underline}
+.env-manual-toggle:hover{color:#005a9e}
+.env-selected-tag{display:none;align-items:center;gap:7px;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600}
+.env-selected-tag.src{background:#dbeafe;color:#1e40af}
+.env-selected-tag.tgt{background:#dcfce7;color:#14532d}
+.env-selected-tag.show{display:flex}
+.env-tag-url{font-size:10px;font-weight:400;opacity:.8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+.env-clear{background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:14px;padding:0;margin-left:auto;line-height:1}
+.env-clear:hover{opacity:1}
+
+/* ── Status boxes ── */
+.st-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px}
+.sbox{border-radius:6px;padding:8px 11px;font-size:11.5px;display:flex;align-items:flex-start;gap:8px;min-height:36px;line-height:1.5;word-break:break-word}
+.s-idle   {background:#f6f8fa;border:1px solid #e1e4e8;color:#888}
+.s-ok     {background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.s-error  {background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
+.s-loading{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8}
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.d-idle{background:#d1d5db}.d-ok{background:#22c55e}.d-error{background:#ef4444}
+.d-loading{background:#3b82f6;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── Mode note ── */
+.note{font-size:11px;border-radius:6px;padding:8px 11px;display:flex;gap:8px;line-height:1.5}
+.note-blue{color:#1e3a5f;background:#eff6ff;border:1px solid #bfdbfe}
+
+/* ── Actions ── */
+.act-bar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;align-items:center}
+
+/* ── Buttons ── */
+.btn{padding:7px 14px;border-radius:6px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px;transition:background .18s,box-shadow .18s,transform .1s;white-space:nowrap}
+.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:#0078d4;color:#fff}
+.btn-primary:hover:not(:disabled){background:#106ebe;box-shadow:0 2px 6px rgba(0,120,212,.35)}
+.btn-ghost{background:#fff;color:#333;border:1px solid #d0d5dd}
+.btn-ghost:hover:not(:disabled){background:#f6f8fa}
+.btn-teal{background:#0e7490;color:#fff}
+.btn-teal:hover:not(:disabled){background:#0c6280}
+.btn-green{background:#16a34a;color:#fff}
+.btn-green:hover:not(:disabled){background:#15803d}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-xs{padding:3px 7px;font-size:11px}
+.ibtn{background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;font-size:12px;transition:background .12s}
+.ibtn:hover{background:#e5e7eb}.ibtn.del:hover{background:#fee2e2}
+
+/* ── Spinner ── */
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:_spin .7s linear infinite;flex-shrink:0}
+.spin-dk{border-color:rgba(0,0,0,.15);border-top-color:#0078d4}
+@keyframes _spin{to{transform:rotate(360deg)}}
+
+/* ── Filters ── */
+.filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.flbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#555}
+.filter-row select{padding:7px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12.5px;background:#fff;outline:none;cursor:pointer;min-width:180px}
+.filter-row select:focus{border-color:#0078d4}
+.filter-search{padding:7px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12.5px;background:#fff;outline:none;min-width:240px;flex:1}
+.filter-search:focus{border-color:#0078d4;box-shadow:0 0 0 3px rgba(0,120,212,.12)}
+.chk-wrap{display:flex;align-items:center;gap:6px;margin-left:auto;cursor:pointer;font-size:12px;color:#555;user-select:none}
+.chk-wrap input{accent-color:#0078d4;width:14px;height:14px;cursor:pointer}
+
+.setup-compact{display:flex;flex-direction:column;gap:14px}
+.setup-intro{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.setup-title{font-size:13px;font-weight:700;color:#1e1e2e}
+.setup-copy{font-size:11.5px;color:#667085;line-height:1.5;max-width:720px}
+.settings-panel{margin-top:6px;border:1px solid #dbe4f0;border-radius:8px;background:#fafcff}
+.settings-panel summary{list-style:none;cursor:pointer;padding:10px 12px;font-size:12px;font-weight:700;color:#334155;display:flex;align-items:center;gap:8px}
+.settings-panel summary::-webkit-details-marker{display:none}
+.settings-panel[open] summary{border-bottom:1px solid #e5e7eb;background:#f8fafc}
+.settings-body{padding:12px}
+.settings-note{font-size:11px;color:#6b7280;line-height:1.5;margin-bottom:10px}
+.pf-actions{display:flex;gap:6px;align-items:center}
+.pf-actions button{padding:4px 8px;border-radius:6px;border:1px solid #d0d5dd;background:#fff;font-size:11px;cursor:pointer}
+.pf-actions button:hover{background:#f8fafc}
+
+.mod-row-clickable{cursor:pointer}
+.mod-row-clickable:hover{background:#fff7ed}
+.detail-panel{border:1px solid #e1e4e8;border-radius:8px;overflow:hidden;margin-top:14px;background:#fff}
+.detail-head{background:#f6f8fa;border-bottom:1px solid #e1e4e8;padding:10px 16px;font-weight:700;font-size:13px}
+.detail-sub{padding:8px 16px;font-size:11px;color:#666;border-bottom:1px solid #e1e4e8;background:#fff}
+.value-cell{max-width:360px;white-space:pre-wrap;word-break:break-word;font-family:Consolas,monospace;font-size:11px}
+.field-diff{background:#fff7ed}
+.progress-panel{display:none;margin-top:12px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:8px;padding:10px 12px}
+.progress-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.progress-label{font-size:12px;font-weight:700;color:#1d4ed8}
+.progress-text{font-size:11px;color:#4b5563;line-height:1.4}
+.progress-bar{height:10px;background:#dbeafe;border-radius:999px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#0078d4,#16a34a);transition:width .2s ease}
+
+/* ── Metrics ── */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.mc{border-radius:8px;padding:11px 12px;text-align:center}
+.mc-total{background:#f0f9ff;border:1px solid #bae6fd}
+.mc-onlya{background:#eff6ff;border:1px solid #bfdbfe}
+.mc-onlyb{background:#f0fdf4;border:1px solid #bbf7d0}
+.mc-match{background:#fefce8;border:1px solid #fde68a}
+.mv{font-size:24px;font-weight:800;line-height:1.1}
+.mc-total .mv{color:#0369a1}.mc-onlya .mv{color:#1d4ed8}.mc-onlyb .mv{color:#15803d}.mc-match .mv{color:#92400e}
+.ml2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#888;margin-top:3px}
+
+/* ── Table ── */
+.tbl-wrap{overflow:auto;max-height:480px;border:1px solid #e1e4e8;border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{position:sticky;top:0;background:#f6f8fa;border-bottom:2px solid #e1e4e8;padding:8px 11px;text-align:left;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:#555;white-space:nowrap;z-index:1}
+tbody tr{border-bottom:1px solid #f0f0f0;transition:background .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#f6f8fa}
+td{padding:7px 11px;color:#333}
+td.ename{font-family:Consolas,monospace;font-size:11px;color:#1e1e2e;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.ch-match{background:#fef9c3;color:#713f12}.ch-onlya{background:#dbeafe;color:#1e40af}.ch-onlyb{background:#dcfce7;color:#14532d}
+.ck{color:#22c55e;font-size:13px}.cx{color:#d1d5db;font-size:13px}
+.empty{text-align:center;padding:44px 24px;color:#aaa}
+.ei{font-size:38px;margin-bottom:10px}.empty p{font-size:12.5px;line-height:1.6}
+.exp-bar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:14px;right:14px;background:#1e1e2e;color:#fff;padding:9px 14px;border-radius:8px;font-size:12px;box-shadow:0 4px 12px rgba(0,0,0,.25);opacity:0;transform:translateY(6px);transition:opacity .22s,transform .22s;pointer-events:none;z-index:999;max-width:380px;line-height:1.4}
+#toast.show{opacity:1;transform:translateY(0)}
+
+/* ── Token fields ── */
+.token-row{margin-top:8px}
+.company-row{margin-top:8px}
+.token-hint{font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;color:#0078d4}
+.token-hint a{color:#0078d4;text-decoration:underline}
+.token-hint a:hover{color:#005a9e}
+.token-input{width:100%;padding:7px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;transition:border-color .18s,box-shadow .18s;font-family:Consolas,monospace}
+.token-input:focus{border-color:#0078d4;box-shadow:0 0 0 3px rgba(0,120,212,.12)}
+
+/* ── Modal ── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px 26px;max-width:520px;width:calc(100% - 40px);box-shadow:0 8px 32px rgba(0,0,0,.22);position:relative;font-size:13px;line-height:1.6}
+.modal h3{font-size:15px;font-weight:700;color:#1e1e2e;margin-bottom:12px}
+.modal ol{padding-left:18px;margin-bottom:12px}
+.modal ol li{margin-bottom:6px}
+.modal code{display:block;background:#f6f8fa;border:1px solid #e1e4e8;border-radius:6px;padding:10px 12px;font-size:11px;font-family:Consolas,monospace;margin:8px 0;cursor:pointer;word-break:break-all;line-height:1.5;color:#0e7490}
+.modal code:hover{background:#eff6ff;border-color:#bfdbfe}
+.modal-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:16px;cursor:pointer;color:#888;line-height:1;padding:2px 6px;border-radius:4px}
+.modal-close:hover{background:#f0f0f0;color:#333}
+</style>
+<style id="edv-styles">
+/* ══ Entity Diff Viewer ══════════════════════════════════════════ */
+.edv{border:1px solid #e1e4e8;border-radius:10px;overflow:hidden;margin-top:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.edv-head{background:linear-gradient(to right,#f6f8fa,#fff);border-bottom:1px solid #e1e4e8;padding:11px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.edv-head-title{font-size:13px;font-weight:700;color:#1e1e2e;font-family:Consolas,monospace;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.edv-counts{display:flex;gap:8px;flex-wrap:wrap}
+.edv-count-src{color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600}
+.edv-count-tgt{color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:600}
+.edv-key{font-size:11px;color:#6b7280;background:#f3f4f6;border-radius:6px;padding:3px 9px;border:1px solid #e5e7eb}
+.edv-body{display:flex;min-height:0}
+.edv-sidebar{width:210px;flex-shrink:0;border-right:1px solid #e1e4e8;display:flex;flex-direction:column;background:#fafafa}
+.edv-sidebar-hdr{padding:8px 12px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:1px solid #e1e4e8;background:#f0f2f5}
+.edv-sidebar-list{overflow-y:auto;max-height:620px}
+.edv-rec{padding:9px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;border-left:3px solid transparent;transition:all .12s;display:flex;flex-direction:column;gap:3px}
+.edv-rec:hover{background:#eff6ff;border-left-color:#93c5fd}
+.edv-rec.active{background:#dbeafe;border-left-color:#0078d4}
+.edv-rec-key{font-size:11.5px;font-weight:700;color:#1e1e2e;font-family:Consolas,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.edv-rec-badge{font-size:10px;font-weight:700;color:#92400e;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:1px 7px;align-self:flex-start}
+.edv-panel{flex:1;min-width:0;display:flex;flex-direction:column}
+.edv-panel-bar{padding:9px 14px;border-bottom:1px solid #e1e4e8;background:#f9fafb;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.edv-panel-rec{font-size:12.5px;font-weight:700;color:#1e1e2e;font-family:Consolas,monospace;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.edv-panel-stat{font-size:11px;color:#6b7280;white-space:nowrap}
+.edv-difftoggle{display:flex;align-items:center;gap:5px;font-size:11.5px;color:#374151;cursor:pointer;user-select:none;white-space:nowrap;margin-left:auto}
+.edv-difftoggle input{accent-color:#0078d4;width:14px;height:14px;cursor:pointer}
+.edv-tbl-wrap{overflow:auto;max-height:460px}
+.edv-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.edv-tbl col.c-field{width:180px}
+.edv-tbl thead th{position:sticky;top:0;z-index:3;padding:9px 13px;text-align:left;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e1e4e8;white-space:nowrap}
+.edv-tbl th.h-field{background:#f6f8fa;color:#555}
+.edv-tbl th.h-src{background:#eff6ff;color:#1d4ed8;border-left:2px solid #bfdbfe}
+.edv-tbl th.h-tgt{background:#f0fdf4;color:#15803d;border-left:2px solid #bbf7d0}
+.edv-tbl tbody tr{border-bottom:1px solid #f3f4f6;transition:background .1s}
+.edv-tbl tbody tr:hover{background:#f9fafb}
+.edv-tbl tbody tr.r-diff{background:#fffbeb}
+.edv-tbl tbody tr.r-diff:hover{background:#fef9c3}
+.edv-tbl td{padding:7px 13px;vertical-align:top;word-break:break-word;white-space:pre-wrap;font-family:Consolas,monospace;font-size:11.5px;color:#374151}
+.edv-tbl td.c-field{font-family:'Segoe UI',sans-serif;font-size:11.5px;font-weight:600;color:#374151;background:#fafafa;white-space:normal;border-right:1px solid #e5e7eb}
+.edv-tbl td.c-src{border-left:2px solid #e5e7eb}
+.edv-tbl td.c-tgt{border-left:2px solid #e5e7eb}
+.edv-tbl td.c-src.changed{background:#fef3c7;color:#78350f;border-left:2px solid #f59e0b}
+.edv-tbl td.c-tgt.changed{background:#dcfce7;color:#14532d;border-left:2px solid #16a34a}
+.diff-pill{display:inline-block;background:#f59e0b;color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:8px;margin-left:5px;vertical-align:middle;letter-spacing:.3px;text-transform:uppercase}
+.edv-tbl tr.divider-row td{padding:3px 13px;font-size:10px;color:#9ca3af;background:#f3f4f6;font-family:'Segoe UI',sans-serif;font-weight:600;letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid #e5e7eb}
+.edv-missing{padding:10px 14px;display:flex;flex-direction:column;gap:8px;border-top:1px solid #e1e4e8}
+.edv-missing-blk{border-radius:7px;padding:9px 13px;font-size:12px}
+.edv-missing-blk.src{background:#fff1f2;border:1px solid #fecdd3;color:#991b1b}
+.edv-missing-blk.tgt{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8}
+.edv-missing-blk strong{display:block;font-size:11.5px;margin-bottom:4px}
+.edv-missing-blk ul{margin:0;padding-left:18px;line-height:1.8;font-family:Consolas,monospace;font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-icon">&#x26A1;</div>
+  <div>
+    <div class="hdr-title">D365 F&amp;O Entity Compare</div>
+    <div class="hdr-sub">Compare Data Entities across two environments</div>
+  </div>
+  <button id="btnFullPage" title="Open as full page tab" style="margin-left:auto;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);color:#fff;padding:5px 10px;border-radius:6px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap">&#x26F6; Full Page</button>
+</div>
+
+<div class="page">
+
+  <!-- ══ Card 1: Environments ══ -->
+  <div class="card" id="setupCard">
+    <div class="card-hdr">&#x1F310; Choose Environments<button id="btnToggleSetup" class="card-toggle" type="button" aria-expanded="true">Collapse</button></div>
+    <div class="card-body" id="setupCardBody">
+      <div class="setup-compact">
+        <div class="setup-intro">
+          <div>
+            <div class="setup-title">Pick Source and Target, then validate and load</div>
+            <div class="setup-copy">The main workflow is now: select two environments here, run <strong>Validate Access</strong> or <strong>Load &amp; Compare</strong>, then work primarily in <strong>🔧 Module &amp; Filters</strong>.</div>
+          </div>
+        </div>
+
+        <div class="env-cards">
+
+              <!-- Source -->
+              <div class="env-card">
+                <div class="env-card-hdr src">&#x1F535; Source Environment</div>
+                <div class="env-card-body">
+                  <select id="pickerA" class="env-sel sel-src">
+                    <option value="">&#x2014; Select a saved profile &#x2014;</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Target -->
+              <div class="env-card">
+                <div class="env-card-hdr tgt">&#x1F7E2; Target Environment</div>
+                <div class="env-card-body">
+                  <select id="pickerB" class="env-sel sel-tgt">
+                    <option value="">&#x2014; Select a saved profile &#x2014;</option>
+                  </select>
+                </div>
+              </div>
+
+        </div><!-- /env-cards -->
+
+        <div id="modeNote" class="note note-blue" style="display:none"></div>
+        <div class="st-row">
+          <div id="stA" class="sbox s-idle"><div class="sdot d-idle"></div><span>Source &#x2014; not connected</span></div>
+          <div id="stB" class="sbox s-idle"><div class="sdot d-idle"></div><span>Target &#x2014; not connected</span></div>
+        </div>
+        <div class="act-bar">
+          <button class="btn btn-ghost" id="btnVal"><span id="spinVal" class="spin spin-dk" style="display:none"></span>&#x1F50D; Validate Access</button>
+          <button class="btn btn-primary" id="btnLoad"><span id="spinLoad" class="spin" style="display:none"></span>&#x1F4E5; Load &amp; Compare</button>
+          <button class="btn btn-ghost" id="btnDiag" style="margin-left:auto;font-size:11px;color:#888">&#x1F9EA; Diagnose</button>
+        </div>
+        <div id="progressPanel" class="progress-panel">
+          <div class="progress-top">
+            <div id="progressLabel" class="progress-label">Working...</div>
+            <div id="progressPct" class="progress-text">0%</div>
+          </div>
+          <div id="progressText" class="progress-text">Preparing...</div>
+          <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        </div>
+        <div id="diagPanel" style="display:none;margin-top:10px;background:#1e1e2e;border-radius:8px;padding:12px 14px;font-family:Consolas,monospace;font-size:11px;color:#d4d4d4;line-height:1.6;max-height:260px;overflow-y:auto;white-space:pre-wrap;word-break:break-all"></div>
+
+        <details class="settings-panel" id="profileSettings">
+          <summary>&#9881;&#65039; Settings: Save Environment Profiles</summary>
+          <div class="settings-body">
+            <div class="settings-note">Use this only when you want to add, edit, or delete saved environments. The normal path is just to pick Source and Target above and run.</div>
+            <div class="pf-form">
+              <div>
+                <label>Profile Name</label>
+                <input id="pfName" type="text" placeholder="e.g. DEV, UAT, PROD"/>
+              </div>
+              <div>
+                <label>Environment URL</label>
+                <input id="pfUrl" type="url" placeholder="https://company.cloudax.dynamics.com"/>
+              </div>
+              <div style="padding-bottom:1px">
+                <button type="button" class="btn btn-primary" id="btnAddProfile">&#x2795; Add Profile</button>
+              </div>
+            </div>
+            <input id="pfEditId" type="hidden" value=""/>
+            <div id="pfList" class="pf-list">
+              <div class="pf-empty">No profiles saved yet. Add one above.</div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Card 2: Filters ══ -->
+  <div class="card" id="moduleFiltersCard">
+    <div class="card-hdr">&#x1F527; Module &amp; Filters</div>
+    <div class="card-body">
+      <div class="filter-row">
+        <label class="flbl">Module / Group</label>
+        <select id="modSel">
+          <option value="">All Module Groups — load data to filter</option>
+        </select>
+        <label class="flbl">Legal Entity</label>
+        <div style="display:flex;gap:6px;align-items:center;min-width:240px;flex-wrap:wrap">
+          <select id="company" class="env-sel" style="min-width:0;width:180px;padding:7px 10px;font-size:12.5px">
+            <option value="">All legal entities</option>
+            <option value="200">200</option>
+            <option value="201">201</option>
+            <option value="__custom__">✏️ Enter custom…</option>
+          </select>
+          <input id="companyCustom" type="text" class="token-input" placeholder="Type dataAreaId" style="display:none;max-width:150px;text-transform:uppercase"/>
+        </div>
+        <button class="btn btn-green btn-sm" id="btnReport" style="display:none" title="Select a specific module group first. Full-report generation for All Module Groups is disabled." aria-label="Generate HTML Report">&#x1F4C4;</button>
+      </div>
+      <div id="moduleProgressPanel" class="progress-panel" style="margin-top:10px">
+        <div class="progress-top">
+          <div id="moduleProgressLabel" class="progress-label">Working...</div>
+          <div id="moduleProgressPct" class="progress-text">0%</div>
+        </div>
+        <div id="moduleProgressText" class="progress-text">Preparing...</div>
+        <div class="progress-bar"><div id="moduleProgressFill" class="progress-fill"></div></div>
+      </div>
+      <!-- Module entity detail panel (shown after clicking Compare Module Details) -->
+      <div id="modDetailPanel" style="display:none">
+        <div style="margin-top:14px;background:#fff;border:1px solid #e1e4e8;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.07)">
+          <div style="background:#f6f8fa;border-bottom:1px solid #e1e4e8;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <span style="font-size:13px;font-weight:700;color:#333">📊 Module Comparison Detail</span>
+            <div id="modDetailSummary" style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px"></div>
+            <select id="modDetailStatusFilter" style="padding:5px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;background:#fff">
+              <option value="">All statuses</option>
+              <option value="Match">Match</option>
+              <option value="Diff">Diff</option>
+              <option value="Only in Source">Only in Source</option>
+              <option value="Only in Target">Only in Target</option>
+              <option value="No OData">No OData</option>
+            </select>
+            <input id="modDetailFilter" type="search" placeholder="Filter entities…" style="margin-left:auto;padding:5px 10px;border:1px solid #d0d5dd;border-radius:6px;font-size:12px;outline:none;min-width:160px"/>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+              <thead>
+                <tr style="background:#1a237e;color:#fff">
+                  <th style="padding:8px 10px;text-align:right;width:32px">#</th>
+                  <th style="padding:8px 10px;text-align:left;min-width:210px">Data entity AOT name</th>
+                  <th style="padding:8px 10px;text-align:left;min-width:190px">Entity name (DMF)</th>
+                  <th style="padding:8px 10px;text-align:left;min-width:190px">Public collection name (OData)</th>
+                  <th style="padding:8px 10px;text-align:center;width:80px">Source Rows</th>
+                  <th style="padding:8px 10px;text-align:center;width:80px">Target Rows</th>
+                  <th id="thSrcOnly" style="padding:8px 10px;text-align:center;width:90px">Source Only</th>
+                  <th id="thTgtOnly" style="padding:8px 10px;text-align:center;width:90px">Target Only</th>
+                  <th style="padding:8px 10px;text-align:left;width:110px">Status</th>
+                  <th style="padding:8px 10px;text-align:left">Detail</th>
+                </tr>
+              </thead>
+              <tbody id="modDetailTbody">
+                <tr><td colspan="10" style="text-align:center;padding:20px;color:#9ca3af">Run "Compare Module Details" to see results</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div id="entityDiffPanel" style="display:none"></div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ── Token Help Modal ── -->
+<div class="modal-bg" id="tokenModal">
+  <div class="modal">
+    <button class="modal-close" id="modalCloseBtn">&#x2715;</button>
+    <h3>&#x1F511; How to get your D365 Bearer Token</h3>
+    <ol>
+      <li>Open your D365 environment in a browser tab and log in</li>
+      <li>Press <strong>F12</strong> to open Developer Tools</li>
+      <li>Click the <strong>Console</strong> tab</li>
+      <li>Paste and run this command (click to copy):</li>
+    </ol>
+    <code id="tokenCmd">copy(Object.entries(sessionStorage).filter(([k])=>k.includes('access')||k.includes('token')).map(([k,v])=>{try{var t=JSON.parse(v);return t.secret||t.accessToken||t.access_token||v}catch{return v}}).find(v=>v&&v.length>100)||'No token found - try the Network tab method')</code>
+    <p style="font-size:11px;color:#888;margin-top:8px">&#x2139;&#xFE0F; Click the command above to copy it. After running it in the Console, the token is in your clipboard &mdash; paste it into the token field.</p>
+    <p style="font-size:11px;color:#555;margin-top:8px"><strong>Alternative (Network tab):</strong> In DevTools &rarr; Network, click any <code>/data/</code> request, look at Request Headers &rarr; <code>Authorization: Bearer &lt;token&gt;</code> &mdash; copy everything after "Bearer ".</p>
+    <div style="margin-top:14px;text-align:right"><button class="btn btn-primary btn-sm" id="modalGotItBtn">Got it</button></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="popup.js"></script>
+</body>
+</html>
